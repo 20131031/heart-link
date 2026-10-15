@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeartLink - 클린 데이팅</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            200: '#fecdd3',
+                            300: '#fda4af',
+                            400: '#fb7185',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                            800: '#9f1239',
+                            900: '#881337',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f43f5e;
+        }
+        .vertical-snap-container {
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+        }
+        .vertical-snap-card {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-rose-500 selection:text-white pb-20 md:pb-0">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-4 left-4 sm:left-auto sm:right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Main Top Navigation -->
+    <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 px-4 py-3 sm:px-6">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+            
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-2 sm:gap-3 cursor-pointer group" onclick="switchTab('home')">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-rose-600 via-pink-500 to-rose-400 flex items-center justify-center shadow-lg shadow-rose-500/30 group-hover:scale-105 transition-transform shrink-0">
+                    <i data-lucide="heart-handshake" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <span class="text-xl sm:text-2xl font-black bg-gradient-to-r from-white via-rose-100 to-rose-400 bg-clip-text text-transparent tracking-tight">HeartLink</span>
+                    <span class="text-[9px] sm:text-[10px] text-rose-400 block font-bold tracking-widest uppercase -mt-1">Clean Dating</span>
+                </div>
+            </div>
+
+            <!-- Desktop Navigation Tabs -->
+            <nav class="hidden md:flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 shadow-inner">
+                <button id="nav-home" onclick="switchTab('home')" class="nav-tab text-white bg-gradient-to-r from-rose-600 to-pink-600 px-5 py-2 rounded-xl font-bold text-xs transition flex items-center gap-2 shadow-md">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> 홈
+                </button>
+                <button id="nav-discover" onclick="switchTab('discover')" class="nav-tab text-slate-400 hover:text-slate-200 px-5 py-2 rounded-xl font-medium text-xs transition flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4"></i> 인연 목록
+                </button>
+                <button id="nav-matches" onclick="switchTab('matches')" class="nav-tab text-slate-400 hover:text-slate-200 px-5 py-2 rounded-xl font-medium text-xs transition flex items-center gap-2">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i> 채팅목록
+                </button>
+                <button id="nav-profile" onclick="switchTab('profile')" class="nav-tab text-slate-400 hover:text-slate-200 px-5 py-2 rounded-xl font-medium text-xs transition flex items-center gap-2">
+                    <i data-lucide="more-horizontal" class="w-4 h-4"></i> 더보기
+                </button>
+                <!-- Admin tab: HIDDEN by default, visible only to developer/admin -->
+                <button id="nav-admin" onclick="switchTab('admin')" class="hidden nav-tab text-amber-400 hover:text-amber-300 bg-amber-950/40 border border-amber-500/30 px-3.5 py-2 rounded-xl font-bold text-xs transition items-center gap-1.5 shadow-sm">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i> 개발자 감시모드
+                </button>
+            </nav>
+
+            <!-- User Auth & Store Actions Header -->
+            <div id="header-auth-area" class="flex items-center gap-2 sm:gap-3">
+                <!-- Dynamically populated via renderHeaderUI() -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Fixed Mobile Bottom Navigation Bar -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800/90 px-3 py-2 flex items-center justify-around shadow-2xl">
+        <button id="mobile-nav-home" onclick="switchTab('home')" class="mobile-nav-tab text-rose-400 font-bold flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition relative">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+            <span class="text-[10px] tracking-tight">홈</span>
+        </button>
+        <button id="mobile-nav-discover" onclick="switchTab('discover')" class="mobile-nav-tab text-slate-400 flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition relative">
+            <i data-lucide="users" class="w-5 h-5"></i>
+            <span class="text-[10px] tracking-tight">인연목록</span>
+        </button>
+        <button id="mobile-nav-matches" onclick="switchTab('matches')" class="mobile-nav-tab text-slate-400 flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition relative">
+            <i data-lucide="message-circle" class="w-5 h-5"></i>
+            <span class="text-[10px] tracking-tight">채팅</span>
+        </button>
+        <button id="mobile-nav-profile" onclick="switchTab('profile')" class="mobile-nav-tab text-slate-400 flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition relative">
+            <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+            <span class="text-[10px] tracking-tight">더보기</span>
+        </button>
+        <!-- Mobile Admin tab: HIDDEN by default -->
+        <button id="mobile-nav-admin" onclick="switchTab('admin')" class="hidden mobile-nav-tab text-amber-400 flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition relative">
+            <i data-lucide="shield-alert" class="w-5 h-5"></i>
+            <span class="text-[10px] tracking-tight">감시모드</span>
+        </button>
+    </nav>
+
+    <!-- Main Views Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 my-auto py-4 sm:py-8 w-full">
+
+        <!-- 1. HOME VIEW -->
+        <div id="view-home" class="tab-content space-y-6 max-w-4xl mx-auto">
+            <!-- Hero Banner -->
+            <div class="relative bg-gradient-to-br from-rose-950/60 via-slate-900 to-slate-950 border border-rose-500/20 p-6 sm:p-10 rounded-3xl overflow-hidden shadow-2xl">
+                <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="relative z-10 space-y-4 max-w-xl">
+                    <span class="inline-flex items-center gap-1.5 bg-rose-500/20 border border-rose-500/30 text-rose-300 font-extrabold text-[11px] px-3 py-1 rounded-full uppercase tracking-wider">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> 100% 실명 검증 안전 데이팅
+                    </span>
+                    <h1 class="text-2xl sm:text-4xl font-black text-white leading-tight">
+                        진정한 인연을 찾는<br>
+                        <span class="bg-gradient-to-r from-rose-400 to-pink-500 bg-clip-text text-transparent">HeartLink</span>
+                    </h1>
+                    <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        투명하고 신뢰할 수 있는 실명 기반 프라이빗 인연을 만나보세요. 
+                        실제 가입자들의 클린 리스트로 안전하게 인연을 만날 수 있습니다.
+                    </p>
+                    <div class="pt-2 flex flex-wrap gap-3">
+                        <button onclick="switchTab('discover')" class="bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 hover:from-rose-500 hover:to-pink-500 text-white font-extrabold text-xs sm:text-sm px-6 py-3.5 rounded-2xl shadow-lg shadow-rose-600/30 transition flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4"></i> 인연 목록 둘러보기
+                        </button>
+                        <button onclick="openRegisterModal()" class="bg-slate-900/90 hover:bg-slate-800 text-rose-300 border border-rose-500/30 font-bold text-xs sm:text-sm px-5 py-3.5 rounded-2xl transition flex items-center gap-2">
+                            <i data-lucide="user-plus" class="w-4 h-4 text-rose-400"></i> 회원가입 하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-900/80 border border-slate-800/90 p-5 rounded-3xl space-y-2">
+                    <div class="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-400 flex items-center justify-center border border-rose-500/20">
+                        <i data-lucide="list" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-white">깔끔한 리스트</h3>
+                    <p class="text-xs text-slate-400">익숙하고 직관적인 화면으로 인연을 쉽고 빠르게 확인하세요.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800/90 p-5 rounded-3xl space-y-2">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
+                        <i data-lucide="scale" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-white">도용 배상 1,000만원</h3>
+                    <p class="text-xs text-slate-400">타인 정보 도용 시 강력한 손해배상 법적 동의를 거쳐 허위 계정을 원천 차단합니다.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800/90 p-5 rounded-3xl space-y-2">
+                    <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                        <i data-lucide="building-2" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-white">토스뱅크 간편 결제</h3>
+                    <p class="text-xs text-slate-400">소개팅 1회당 500원! 토스뱅크 계좌 입금으로 부담 없이 하트 토큰을 충전할 수 있습니다.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. DISCOVER VIEW -->
+        <div id="view-discover" class="tab-content hidden space-y-4 max-w-3xl mx-auto">
+            
+            <!-- Discover Header Bar & Search -->
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-3xl backdrop-blur-md space-y-3 shadow-xl">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-xl font-black text-white flex items-center gap-2">
+                            <i data-lucide="users" class="w-5 h-5 text-rose-500"></i> 회원 인연 목록
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">실제 가입한 회원들의 인연 목록입니다.</p>
+                    </div>
+
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                        <!-- Feed View Mode Switcher -->
+                        <div class="bg-slate-950 p-1 rounded-2xl border border-slate-800 flex items-center gap-1">
+                            <button id="btn-mode-kakaolist" onclick="setFeedMode('kakaolist')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-md">
+                                <i data-lucide="list" class="w-3.5 h-3.5"></i> 목록형
+                            </button>
+                            <button id="btn-mode-grid" onclick="setFeedMode('grid')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
+                                <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> 그리드
+                            </button>
+                            <button id="btn-mode-vertical" onclick="setFeedMode('vertical')" class="px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200">
+                                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> 숏폼 세로
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Age Filter Category Tabs & Search Bar -->
+                <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                    <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+                        <button id="age-filter-all" onclick="setAgeFilter('all')" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-600 text-white transition">전체</button>
+                        <button id="age-filter-adult" onclick="setAgeFilter('adult')" class="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-lg transition">🔞 성인관</button>
+                        <button id="age-filter-teen" onclick="setAgeFilter('teen')" class="px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-lg transition">🏫 청소년관</button>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="kakao-search-input" oninput="renderDiscoverCards()" placeholder="이름, 닉네임, 소속 또는 지역 검색..." class="w-full bg-slate-950 border border-slate-800/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition">
+                    </div>
+                </div>
+            </div>
+
+            <!-- List Container -->
+            <div id="discover-kakao-list" class="bg-slate-900/90 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl divide-y divide-slate-800/60">
+                <!-- Dynamic Items Rendered Here -->
+            </div>
+
+            <!-- Vertical Card Viewer Container -->
+            <div id="discover-vertical-container" class="hidden max-w-md mx-auto relative min-h-[620px] h-[calc(100vh-220px)] rounded-3xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl">
+                <div id="discover-vertical-feed" class="vertical-snap-container w-full h-full overflow-y-auto overflow-x-hidden relative">
+                    <!-- Dynamic vertical swipe profiles -->
+                </div>
+            </div>
+
+            <!-- Profile Cards Grid Container -->
+            <div id="discover-cards-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Dynamic grid profiles -->
+            </div>
+        </div>
+
+        <!-- 3. MATCHES & CHAT VIEW -->
+        <div id="view-matches" class="tab-content hidden space-y-4 max-w-2xl mx-auto">
+            <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="message-square-heart" class="w-5 h-5 text-rose-500"></i> 내 대화함
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">매칭된 인연과의 대화 목록입니다.</p>
+            </div>
+
+            <div id="chat-list-container" class="space-y-3">
+                <!-- Dynamic Chat list -->
+            </div>
+        </div>
+
+        <!-- 4. PROFILE VIEW -->
+        <div id="view-profile" class="tab-content hidden max-w-2xl mx-auto">
+            <div id="my-profile-card" class="bg-slate-900/90 border border-slate-800 p-6 rounded-3xl space-y-6 shadow-xl">
+                <!-- Dynamic Profile view -->
+            </div>
+        </div>
+
+        <!-- 5. ADMIN DASHBOARD VIEW -->
+        <div id="view-admin" class="tab-content hidden space-y-6 max-w-6xl mx-auto">
+            <div class="bg-amber-950/40 border border-amber-500/40 p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+                <div>
+                    <span class="bg-amber-500/20 text-amber-300 text-[10px] font-extrabold px-2.5 py-1 rounded-md border border-amber-500/40 uppercase tracking-widest flex items-center gap-1.5 w-fit">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> 개발자 실시간 감시모드 가동 중
+                    </span>
+                    <h2 class="text-2xl font-black text-white mt-1.5 flex items-center gap-2">
+                        <i data-lucide="shield-alert" class="w-6 h-6 text-amber-400"></i> 개발자 데이터 감시 & 통제 센터
+                    </h2>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="renderAdminDashboard()" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1.5">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> 정보 새로고침
+                    </button>
+                    <button onclick="switchTab('home')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3.5 py-2 rounded-xl border border-slate-700 font-bold transition">
+                        일반 화면으로 복귀
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Overview Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
+                    <span class="text-slate-400 text-[10px] block font-semibold">총 가입 회원</span>
+                    <span id="admin-stat-users" class="text-xl font-black text-white">0명</span>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
+                    <span class="text-slate-400 text-[10px] block font-semibold">입금 대기 요청</span>
+                    <span id="admin-stat-deposits" class="text-xl font-black text-amber-400">0건</span>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
+                    <span class="text-slate-400 text-[10px] block font-semibold">성공 매칭 수</span>
+                    <span id="admin-stat-matches" class="text-xl font-black text-rose-400">0건</span>
+                </div>
+                <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
+                    <span class="text-slate-400 text-[10px] block font-semibold">감시 로그 수</span>
+                    <span id="admin-stat-logs" class="text-xl font-black text-emerald-400">0개</span>
+                </div>
+            </div>
+
+            <!-- Deposit Requests Management -->
+            <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-4 shadow-xl">
+                <h3 class="text-sm font-bold text-rose-300 flex items-center gap-2">
+                    <i data-lucide="credit-card" class="w-4 h-4 text-rose-400"></i> 토스뱅크 무통장 입금 승인/거절 대기목록
+                </h3>
+                <div id="admin-deposit-queue" class="space-y-2">
+                    <!-- Dynamic Deposit Queue -->
+                </div>
+            </div>
+
+            <!-- Registered Users Directory & Heart Controls -->
+            <div class="bg-slate-900/90 border border-slate-800 p-5 rounded-2xl space-y-4 shadow-xl">
+                <h3 class="text-sm font-bold text-emerald-300 flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i> 회원 통합 감시 & 하트/권한 제어
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-800/80 text-slate-400 uppercase font-semibold text-[10px] tracking-wider">
+                            <tr>
+                                <th class="p-3">프로필</th>
+                                <th class="p-3">실명 / 아이디</th>
+                                <th class="p-3">연락처</th>
+                                <th class="p-3">연령/소속</th>
+                                <th class="p-3">지역</th>
+                                <th class="p-3">도용 동의</th>
+                                <th class="p-3">하트 수량 제어</th>
+                                <th class="p-3">상태 및 제어</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-user-table-body" class="divide-y divide-slate-800">
+                            <!-- Dynamic User Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Profile Detail Modal -->
+    <div id="modal-profile-detail" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button onclick="closeProfileModal()" class="absolute top-4 right-4 z-10 bg-slate-950/60 hover:bg-slate-950 text-white w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div id="modal-profile-content" class="max-h-[85vh] overflow-y-auto">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Chat Modal -->
+    <div id="modal-chat" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg h-[88vh] flex flex-col overflow-hidden shadow-2xl relative">
+            <!-- Header -->
+            <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img id="chat-partner-avatar" src="" class="w-10 h-10 rounded-2xl object-cover border border-slate-800">
+                    <div>
+                        <h3 id="chat-partner-name" class="text-sm font-bold text-white flex items-center gap-1"></h3>
+                        <p id="chat-partner-sub" class="text-[10px] text-slate-400"></p>
+                    </div>
+                </div>
+                <button onclick="closeChatModal()" class="text-slate-400 hover:text-white p-2">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- Messages Container -->
+            <div id="chat-messages-container" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-950/50">
+                <!-- Dynamic chat bubbles -->
+            </div>
+            <!-- Input Area -->
+            <form onsubmit="handleSendChatMessage(event)" class="p-3 bg-slate-950 border-t border-slate-800 flex gap-2">
+                <input type="text" id="chat-input-field" placeholder="메시지를 입력하세요..." required class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500">
+                <button type="submit" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-1">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toss Bank Heart Store Modal -->
+    <div id="modal-store" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 space-y-5 relative">
+            <button onclick="closeStoreModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            
+            <div class="text-center space-y-1">
+                <span class="inline-block bg-blue-500/10 border border-blue-500/20 text-blue-400 font-extrabold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider">
+                    토스뱅크 전용 무통장 결제
+                </span>
+                <h3 class="text-xl font-black text-white">하트 토큰 충전소</h3>
+                <p class="text-xs text-slate-400">1개당 500원! 소개팅 신청 1회에 하트 1개가 차감됩니다.</p>
+            </div>
+
+            <!-- Deposit Info Box -->
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-400 font-medium">입금 은행</span>
+                    <span class="text-blue-400 font-bold flex items-center gap-1">
+                        <i data-lucide="building-2" class="w-3.5 h-3.5"></i> 토스뱅크
+                    </span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-400 font-medium">계좌번호</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-mono text-white font-bold">1000-8829-1204</span>
+                        <button onclick="copyToClipboard('1000-8829-1204')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded transition">복사</button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-400 font-medium">예금주</span>
+                    <span class="text-white font-bold">하트링크(HeartLink)</span>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form onsubmit="handleRequestDeposit(event)" class="space-y-4">
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">충전할 하트 수량</label>
+                    <select id="store-heart-amount" onchange="updateDepositTotal()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500">
+                        <option value="1">하트 1개 (500원)</option>
+                        <option value="3" selected>하트 3개 (1,500원)</option>
+                        <option value="5">하트 5개 (2,500원)</option>
+                        <option value="10">하트 10개 (5,000원)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">입금자명 (실명과 동일 필수)</label>
+                    <input type="text" id="store-depositor-name" required placeholder="예: 홍길동" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500">
+                </div>
+
+                <div class="bg-rose-950/30 border border-rose-500/20 p-3 rounded-xl flex justify-between items-center text-xs">
+                    <span class="text-rose-300 font-semibold">최종 입금액</span>
+                    <span id="store-total-price" class="text-base font-black text-rose-400">1,500원</span>
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs py-3.5 rounded-xl transition shadow-lg shadow-blue-600/30">
+                    입금 확인 요청 등록하기
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="modal-login" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 space-y-5 relative">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="text-center space-y-1">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 mx-auto flex items-center justify-center shadow-lg shadow-rose-500/30">
+                    <i data-lucide="log-in" class="w-6 h-6 text-white"></i>
+                </div>
+                <h3 class="text-xl font-black text-white pt-1">HeartLink 로그인</h3>
+                <p class="text-xs text-slate-400">닉네임과 비밀번호로 로그인해주세요.</p>
+            </div>
+
+            <form onsubmit="handleLoginUser(event)" class="space-y-4">
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">닉네임 <span class="text-rose-400">*</span></label>
+                    <input type="text" id="login-nickname" required placeholder="가입하신 닉네임 입력" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-rose-500">
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">비밀번호 <span class="text-rose-400">*</span></label>
+                    <input type="password" id="login-password" required placeholder="비밀번호 입력" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-3 text-xs text-white focus:outline-none focus:border-rose-500">
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-extrabold text-xs py-3.5 rounded-xl transition shadow-lg shadow-rose-600/30">
+                    로그인 완료
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div id="modal-register" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 space-y-5 relative">
+            <button onclick="closeRegisterModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="text-center space-y-1">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 mx-auto flex items-center justify-center shadow-lg shadow-rose-500/30">
+                    <i data-lucide="user-plus" class="w-6 h-6 text-white"></i>
+                </div>
+                <h3 class="text-xl font-black text-white pt-1">HeartLink 프로필 회원가입</h3>
+                <p class="text-xs text-slate-400">실명 기반 100% 검증 데이팅 서비스입니다.</p>
+            </div>
+
+            <form onsubmit="handleRegisterUser(event)" class="space-y-3.5 max-h-[70vh] overflow-y-auto pr-1">
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">실명 <span class="text-rose-400">*</span></label>
+                    <input type="text" id="reg-real-name" required placeholder="본인 실명 입력" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">사용할 닉네임 <span class="text-rose-400">*</span></label>
+                    <div class="flex gap-2">
+                        <input type="text" id="reg-nickname" required oninput="resetNicknameCheck()" placeholder="서비스 내 노출 닉네임" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                        <button type="button" onclick="checkNicknameDuplicate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs px-3 py-2 rounded-xl transition shrink-0">
+                            중복확인
+                        </button>
+                    </div>
+                    <p id="nickname-check-msg" class="text-[10px] mt-1 hidden"></p>
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">비밀번호 <span class="text-rose-400">*</span></label>
+                    <input type="password" id="reg-password" required minlength="4" placeholder="비밀번호 (4자 이상)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-300 block mb-1">나이 <span class="text-rose-400">*</span></label>
+                        <input type="number" id="reg-age" required min="14" max="80" placeholder="예: 24" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-300 block mb-1">성별 <span class="text-rose-400">*</span></label>
+                        <select id="reg-gender" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                            <option value="여성">여성</option>
+                            <option value="남성">남성</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">소속 (학교명 또는 직장) <span class="text-rose-400">*</span></label>
+                    <input type="text" id="reg-affiliation" required placeholder="예: 서울대학교 / 카카오" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">거주 지역 <span class="text-rose-400">*</span></label>
+                    <input type="text" id="reg-location" required placeholder="예: 서울 강남구 / 경기 성남시" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">연락처 (전화번호) <span class="text-rose-400">*</span></label>
+                    <input type="tel" id="reg-phone" required placeholder="010-0000-0000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-bold text-slate-300 block mb-1">자기소개</label>
+                    <textarea id="reg-bio" rows="2" placeholder="취미, 성격, 성향 등 간단 소개" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-rose-500"></textarea>
+                </div>
+
+                <!-- Identity Theft Legal Agreement Checkbox -->
+                <div class="bg-amber-950/30 border border-amber-500/30 p-3 rounded-xl space-y-2">
+                    <label class="flex items-start gap-2 cursor-pointer">
+                        <input type="checkbox" id="reg-agree-identity" required class="mt-0.5 rounded text-rose-600 focus:ring-rose-500">
+                        <span class="text-[11px] text-amber-200 leading-snug">
+                            <strong class="text-amber-400">[필수 법적 동의]</strong> 타인의 사진이나 인적사항 도용 시 <strong>손해배상금 1,000만원 민사 청구 및 형사 고발</strong> 조치됨에 법적으로 동의합니다.
+                        </span>
+                    </label>
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-extrabold text-xs py-3.5 rounded-xl transition shadow-lg shadow-rose-600/30">
+                    100% 안전 실명 가입 완료하기
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        /* --------------------------------------------------
+         * STATE MANAGEMENT & CLEAN DATA
+         * -------------------------------------------------- */
+        
+        // Developer phone trigger constant
+        const DEVELOPER_PHONE_TRIGGER = "02033014570";
+
+        // Nickname duplication check state
+        let isNicknameChecked = false;
+        let checkedNicknameValue = "";
+
+        // Current user state (null if unauthenticated)
+        let currentUser = null;
+
+        // Clean user database (starts empty)
+        let usersList = [];
+
+        // Deposit requests list
+        let depositRequests = [];
+
+        // Active match connections
+        let matchesList = [];
+
+        // Admin logs
+        let adminLogs = [];
+
+        // Current active UI state
+        let activeTab = 'home';
+        let currentFeedMode = 'kakaolist'; // 'kakaolist', 'grid', 'vertical'
+        let currentAgeFilter = 'all'; // 'all', 'adult', 'teen'
+        let currentActiveChatPartnerId = null;
+
+        /* --------------------------------------------------
+         * INITIALIZATION & TAB SWITCHING
+         * -------------------------------------------------- */
+        window.onload = function() {
+            lucide.createIcons();
+            renderHeaderUI();
+            renderDiscoverCards();
+            renderChatList();
+            renderMyProfileView();
+        };
+
+        function switchTab(tabId) {
+            activeTab = tabId;
+
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+
+            // Show selected view
+            const targetView = document.getElementById(`view-${tabId}`);
+            if (targetView) targetView.classList.remove('hidden');
+
+            // Nav tab highlights desktop
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('text-white', 'bg-gradient-to-r', 'from-rose-600', 'to-pink-600', 'shadow-md');
+                el.classList.add('text-slate-400');
+            });
+
+            const activeNavBtn = document.getElementById(`nav-${tabId}`);
+            if (activeNavBtn && tabId !== 'admin') {
+                activeNavBtn.classList.remove('text-slate-400');
+                activeNavBtn.classList.add('text-white', 'bg-gradient-to-r', 'from-rose-600', 'to-pink-600', 'shadow-md');
+            }
+
+            // Mobile nav bar highlights
+            document.querySelectorAll('.mobile-nav-tab').forEach(el => {
+                el.classList.remove('text-rose-400', 'font-bold');
+                el.classList.add('text-slate-400');
+            });
+            const activeMobileNav = document.getElementById(`mobile-nav-${tabId}`);
+            if (activeMobileNav) {
+                activeMobileNav.classList.remove('text-slate-400');
+                activeMobileNav.classList.add('text-rose-400', 'font-bold');
+            }
+
+            if (tabId === 'admin') {
+                renderAdminDashboard();
+            } else if (tabId === 'discover') {
+                renderDiscoverCards();
+            } else if (tabId === 'matches') {
+                renderChatList();
+            } else if (tabId === 'profile') {
+                renderMyProfileView();
+            }
+
+            lucide.createIcons();
+        }
+
+        /* --------------------------------------------------
+         * HEADER UI RENDERER
+         * -------------------------------------------------- */
+        function renderHeaderUI() {
+            const headerArea = document.getElementById('header-auth-area');
+            const adminNavBtn = document.getElementById('nav-admin');
+            const mobileAdminNavBtn = document.getElementById('mobile-nav-admin');
+
+            if (currentUser && currentUser.isAdmin) {
+                if (adminNavBtn) adminNavBtn.classList.remove('hidden');
+                if (mobileAdminNavBtn) mobileAdminNavBtn.classList.remove('hidden');
+            } else {
+                if (adminNavBtn) adminNavBtn.classList.add('hidden');
+                if (mobileAdminNavBtn) mobileAdminNavBtn.classList.add('hidden');
+            }
+
+            if (currentUser) {
+                headerArea.innerHTML = `
+                    <button onclick="openStoreModal()" class="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-bold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">
+                        <i data-lucide="heart" class="w-3.5 h-3.5 text-rose-500 fill-rose-500"></i>
+                        <span>하트 ${currentUser.hearts}개</span>
+                        <i data-lucide="plus" class="w-3 h-3 text-rose-400 ml-0.5"></i>
+                    </button>
+                    
+                    <button onclick="switchTab('profile')" class="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1 pr-3 rounded-2xl hover:border-slate-700 transition">
+                        <img src="${currentUser.avatar}" class="w-7 h-7 rounded-xl object-cover">
+                        <span class="text-xs font-bold text-white hidden sm:inline">${currentUser.nickname}</span>
+                    </button>
+
+                    <button onclick="handleLogout()" title="로그아웃" class="text-slate-400 hover:text-white p-2 rounded-xl transition">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                `;
+            } else {
+                headerArea.innerHTML = `
+                    <button onclick="openLoginModal()" class="bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-xs px-3.5 py-2 rounded-xl transition">
+                        로그인
+                    </button>
+                    <button onclick="openRegisterModal()" class="bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition shadow-md shadow-rose-600/20">
+                        회원가입
+                    </button>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        /* --------------------------------------------------
+         * NICKNAME DUPLICATION CHECK
+         * -------------------------------------------------- */
+        function checkNicknameDuplicate() {
+            const nicknameInput = document.getElementById('reg-nickname');
+            const nickname = nicknameInput.value.trim();
+            const msgEl = document.getElementById('nickname-check-msg');
+
+            if (!nickname) {
+                showToast('닉네임을 입력해주세요.', 'warning');
+                return;
+            }
+
+            const exists = usersList.some(u => u.nickname.toLowerCase() === nickname.toLowerCase());
+
+            msgEl.classList.remove('hidden', 'text-emerald-400', 'text-rose-400');
+            if (exists) {
+                isNicknameChecked = false;
+                checkedNicknameValue = "";
+                msgEl.classList.add('text-rose-400');
+                msgEl.innerText = "❌ 이미 사용 중인 닉네임입니다.";
+                showToast('이미 사용 중인 닉네임입니다.', 'error');
+            } else {
+                isNicknameChecked = true;
+                checkedNicknameValue = nickname;
+                msgEl.classList.add('text-emerald-400');
+                msgEl.innerText = "✅ 사용 가능한 닉네임입니다.";
+                showToast('사용 가능한 닉네임입니다!', 'success');
+            }
+        }
+
+        function resetNicknameCheck() {
+            isNicknameChecked = false;
+            checkedNicknameValue = "";
+            const msgEl = document.getElementById('nickname-check-msg');
+            if (msgEl) msgEl.classList.add('hidden');
+        }
+
+        /* --------------------------------------------------
+         * AUTHENTICATION & LOGIN / REGISTRATION LOGIC
+         * -------------------------------------------------- */
+        function openLoginModal() {
+            document.getElementById('modal-login').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeLoginModal() {
+            document.getElementById('modal-login').classList.add('hidden');
+        }
+
+        function openRegisterModal() {
+            resetNicknameCheck();
+            document.getElementById('modal-register').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('modal-register').classList.add('hidden');
+        }
+
+        function checkIsAdminPhone(phoneStr) {
+            if (!phoneStr) return false;
+            const cleaned = phoneStr.replace(/[^0-9]/g, '');
+            return cleaned === DEVELOPER_PHONE_TRIGGER;
+        }
+
+        function handleLoginUser(e) {
+            e.preventDefault();
+            const nickname = document.getElementById('login-nickname').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!nickname || !password) {
+                showToast('닉네임과 비밀번호를 모두 입력해주세요.', 'error');
+                return;
+            }
+
+            let foundUser = usersList.find(u => u.nickname === nickname && u.password === password);
+
+            if (!foundUser) {
+                showToast('일치하는 회원 정보가 없습니다. 닉네임과 비밀번호를 확인해주세요.', 'error');
+                return;
+            }
+
+            currentUser = foundUser;
+
+            closeLoginModal();
+            renderHeaderUI();
+            renderMyProfileView();
+            renderDiscoverCards();
+            renderAdminDashboard();
+
+            if (currentUser.isAdmin) {
+                showToast('개발자 계정으로 로그인되었습니다.', 'success');
+                switchTab('admin');
+            } else {
+                showToast(`${currentUser.nickname}님 환영합니다!`, 'success');
+            }
+        }
+
+        function handleRegisterUser(e) {
+            e.preventDefault();
+            const realName = document.getElementById('reg-real-name').value.trim();
+            const nickname = document.getElementById('reg-nickname').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const age = parseInt(document.getElementById('reg-age').value);
+            const gender = document.getElementById('reg-gender').value;
+            const affiliation = document.getElementById('reg-affiliation').value.trim();
+            const location = document.getElementById('reg-location').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
+            const bio = document.getElementById('reg-bio').value.trim();
+            const agreeIdentity = document.getElementById('reg-agree-identity').checked;
+
+            if (!isNicknameChecked || checkedNicknameValue !== nickname) {
+                showToast('닉네임 중복확인을 진행해주세요.', 'warning');
+                return;
+            }
+
+            if (!password || password.length < 4) {
+                showToast('비밀번호를 4자 이상 입력해주세요.', 'warning');
+                return;
+            }
+
+            if (!agreeIdentity) {
+                showToast('타인 도용 배상 1,000만원 동의에 필수 체크해야 합니다.', 'error');
+                return;
+            }
+
+            const isAdmin = checkIsAdminPhone(phone);
+
+            currentUser = {
+                id: `usr_${Date.now()}`,
+                realName,
+                nickname,
+                password,
+                age,
+                gender,
+                affiliation,
+                location,
+                phone,
+                bio: bio || '안녕하세요! 반가워요.',
+                hearts: 3,
+                isAgreedIdentity: true,
+                isAdmin: isAdmin,
+                avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80'
+            };
+
+            usersList.push(currentUser);
+
+            closeRegisterModal();
+            renderHeaderUI();
+            renderMyProfileView();
+            renderDiscoverCards();
+            renderAdminDashboard();
+
+            if (isAdmin) {
+                showToast('가입 완료! 개발자 모드가 활성화되었습니다.', 'success');
+                switchTab('admin');
+            } else {
+                showToast('가입 완료! 웰컴 하트 3개가 지급되었습니다.', 'success');
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            renderHeaderUI();
+            renderMyProfileView();
+            renderDiscoverCards();
+            switchTab('home');
+            showToast('로그아웃 되었습니다.', 'info');
+        }
+
+        function renderMyProfileView() {
+            const container = document.getElementById('my-profile-card');
+            if (!currentUser) {
+                container.innerHTML = `
+                    <div class="text-center py-10 space-y-4">
+                        <i data-lucide="user-x" class="w-12 h-12 text-slate-600 mx-auto"></i>
+                        <p class="text-sm text-slate-400">로그인 정보가 없습니다.</p>
+                        <div class="flex justify-center gap-2">
+                            <button onclick="openLoginModal()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition">
+                                로그인
+                            </button>
+                            <button onclick="openRegisterModal()" class="bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg transition">
+                                회원가입하기
+                            </button>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <img src="${currentUser.avatar}" class="w-16 h-16 rounded-2xl object-cover border border-slate-700 shadow-md">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-xl font-black text-white">${currentUser.nickname} (${currentUser.realName})</h2>
+                            ${currentUser.isAdmin ? `<span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-extrabold px-2 py-0.5 rounded">개발자</span>` : ''}
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">${currentUser.affiliation} · ${currentUser.location}</p>
+                        <span class="text-[11px] text-rose-400 font-bold mt-1 inline-block">보유 하트: ${currentUser.hearts}개</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                    <div class="flex justify-between text-slate-400">
+                        <span>실명 정보</span>
+                        <span class="text-white font-semibold">${currentUser.realName}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>연락처</span>
+                        <span class="text-white font-mono">${currentUser.phone}</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>연령 / 성별</span>
+                        <span class="text-white">${currentUser.age}세 / ${currentUser.gender}</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button onclick="openStoreModal()" class="flex-1 bg-gradient-to-r from-rose-600 to-pink-600 text-white font-bold text-xs py-3 rounded-xl shadow-md">
+                        하트 충전소 이동
+                    </button>
+                    ${currentUser.isAdmin ? `
+                        <button onclick="switchTab('admin')" class="flex-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-xs py-3 rounded-xl">
+                            개발자 감시모드
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+
+            lucide.createIcons();
+        }
+
+        /* --------------------------------------------------
+         * DISCOVER CARDS & LIST FILTERING LOGIC
+         * -------------------------------------------------- */
+        function setFeedMode(mode) {
+            currentFeedMode = mode;
+            document.querySelectorAll('#btn-mode-kakaolist, #btn-mode-grid, #btn-mode-vertical').forEach(btn => {
+                btn.className = "px-3 py-1.5 rounded-xl text-xs font-medium transition flex items-center gap-1.5 text-slate-400 hover:text-slate-200";
+            });
+
+            const activeBtn = document.getElementById(`btn-mode-${mode}`);
+            if (activeBtn) {
+                activeBtn.className = "px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-md";
+            }
+
+            renderDiscoverCards();
+        }
+
+        function setAgeFilter(filter) {
+            currentAgeFilter = filter;
+            document.querySelectorAll('#age-filter-all, #age-filter-adult, #age-filter-teen').forEach(btn => {
+                btn.className = "px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white rounded-lg transition";
+            });
+
+            const activeBtn = document.getElementById(`age-filter-${filter}`);
+            if (activeBtn) {
+                activeBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-rose-600 text-white transition";
+            }
+
+            renderDiscoverCards();
+        }
+
+        function renderDiscoverCards() {
+            const listContainer = document.getElementById('discover-kakao-list');
+            const gridContainer = document.getElementById('discover-cards-grid');
+            const verticalContainer = document.getElementById('discover-vertical-container');
+            const verticalFeed = document.getElementById('discover-vertical-feed');
+
+            const searchInput = document.getElementById('kakao-search-input');
+            const searchKeyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+            // Filter users (exclude current user)
+            let filtered = usersList.filter(u => !currentUser || u.id !== currentUser.id);
+
+            // Age category filter
+            if (currentAgeFilter === 'adult') {
+                filtered = filtered.filter(u => u.age >= 20);
+            } else if (currentAgeFilter === 'teen') {
+                filtered = filtered.filter(u => u.age < 20);
+            }
+
+            // Keyword filter
+            if (searchKeyword) {
+                filtered = filtered.filter(u => 
+                    u.realName.toLowerCase().includes(searchKeyword) ||
+                    u.nickname.toLowerCase().includes(searchKeyword) ||
+                    u.affiliation.toLowerCase().includes(searchKeyword) ||
+                    u.location.toLowerCase().includes(searchKeyword)
+                );
+            }
+
+            listContainer.classList.add('hidden');
+            gridContainer.classList.add('hidden');
+            verticalContainer.classList.add('hidden');
+
+            if (filtered.length === 0) {
+                const emptyHtml = `
+                    <div class="text-center py-16 px-4 space-y-3">
+                        <i data-lucide="users-round" class="w-12 h-12 text-slate-700 mx-auto"></i>
+                        <h4 class="text-sm font-bold text-slate-300">등록된 회원 인연이 없습니다</h4>
+                        <p class="text-xs text-slate-500">회원가입 후 첫 인연이 되어보세요!</p>
+                        <button onclick="openRegisterModal()" class="mt-2 bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl">
+                            지금 회원가입하기
+                        </button>
+                    </div>
+                `;
+                if (currentFeedMode === 'kakaolist') {
+                    listContainer.innerHTML = emptyHtml;
+                    listContainer.classList.remove('hidden');
+                } else if (currentFeedMode === 'grid') {
+                    gridContainer.innerHTML = `<div class="col-span-full">${emptyHtml}</div>`;
+                    gridContainer.classList.remove('hidden');
+                } else {
+                    verticalFeed.innerHTML = emptyHtml;
+                    verticalContainer.classList.remove('hidden');
+                }
+                lucide.createIcons();
+                return;
+            }
+
+            // LIST MODE
+            if (currentFeedMode === 'kakaolist') {
+                listContainer.classList.remove('hidden');
+                listContainer.innerHTML = filtered.map(user => `
+                    <div onclick="openProfileModal('${user.id}')" class="p-4 hover:bg-slate-800/50 transition cursor-pointer flex items-center justify-between gap-3 group">
+                        <div class="flex items-center gap-3.5 min-w-0">
+                            <img src="${user.avatar}" class="w-12 h-12 rounded-2xl object-cover border border-slate-800 group-hover:scale-105 transition-transform shrink-0">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-sm font-bold text-white group-hover:text-rose-400 transition truncate">${user.nickname}</h3>
+                                    <span class="text-[10px] font-semibold ${user.age >= 20 ? 'text-amber-400 bg-amber-950/60' : 'text-emerald-400 bg-emerald-950/60'} px-2 py-0.5 rounded-full border border-slate-800 shrink-0">${user.age}세 · ${user.gender}</span>
+                                </div>
+                                <p class="text-xs text-slate-400 truncate mt-0.5">${user.affiliation} · ${user.location}</p>
+                                <p class="text-[11px] text-slate-500 truncate mt-1">"${user.bio}"</p>
+                            </div>
+                        </div>
+
+                        <button onclick="event.stopPropagation(); requestConnect('${user.id}')" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md transition shrink-0 flex items-center gap-1">
+                            <i data-lucide="heart" class="w-3.5 h-3.5"></i> 소개팅
+                        </button>
+                    </div>
+                `).join('');
+            } 
+            // GRID MODE
+            else if (currentFeedMode === 'grid') {
+                gridContainer.classList.remove('hidden');
+                gridContainer.innerHTML = filtered.map(user => `
+                    <div class="bg-slate-900/90 border border-slate-800 rounded-3xl overflow-hidden hover:border-slate-700 transition flex flex-col justify-between group">
+                        <div class="relative h-48 overflow-hidden">
+                            <img src="${user.avatar}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+                            <span class="absolute top-3 right-3 text-[10px] font-extrabold ${user.age >= 20 ? 'bg-amber-500/80' : 'bg-emerald-500/80'} text-white px-2.5 py-1 rounded-full backdrop-blur-md">
+                                ${user.age}세 · ${user.gender}
+                            </span>
+                        </div>
+                        <div class="p-4 space-y-2">
+                            <h3 class="text-base font-bold text-white group-hover:text-rose-400 transition">${user.nickname}</h3>
+                            <p class="text-xs text-slate-400">${user.affiliation} · ${user.location}</p>
+                            <p class="text-xs text-slate-300 line-clamp-2">"${user.bio}"</p>
+                            <div class="pt-2 flex gap-2">
+                                <button onclick="openProfileModal('${user.id}')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold py-2 rounded-xl transition">
+                                    프로필
+                                </button>
+                                <button onclick="requestConnect('${user.id}')" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold py-2 rounded-xl shadow-md transition flex items-center justify-center gap-1">
+                                    <i data-lucide="heart" class="w-3.5 h-3.5"></i> 신청
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } 
+            // VERTICAL MODE
+            else if (currentFeedMode === 'vertical') {
+                verticalContainer.classList.remove('hidden');
+                verticalFeed.innerHTML = filtered.map(user => `
+                    <div class="vertical-snap-card w-full h-full relative flex flex-col justify-end p-6 border-b border-slate-900">
+                        <img src="${user.avatar}" class="absolute inset-0 w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                        <div class="relative z-10 space-y-3">
+                            <span class="inline-block text-[10px] font-extrabold bg-rose-600 text-white px-2.5 py-1 rounded-full">
+                                ${user.age}세 · ${user.gender}
+                            </span>
+                            <h2 class="text-2xl font-black text-white">${user.nickname}</h2>
+                            <p class="text-xs text-slate-300">${user.affiliation} · ${user.location}</p>
+                            <p class="text-xs text-slate-200 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">"${user.bio}"</p>
+                            <div class="flex gap-2 pt-1">
+                                <button onclick="openProfileModal('${user.id}')" class="flex-1 bg-slate-900/90 border border-slate-700 text-white font-bold text-xs py-3 rounded-2xl">
+                                    상세보기
+                                </button>
+                                <button onclick="requestConnect('${user.id}')" class="flex-1 bg-rose-600 text-white font-black text-xs py-3 rounded-2xl shadow-lg flex items-center justify-center gap-1.5">
+                                    <i data-lucide="heart" class="w-4 h-4"></i> 소개팅 신청 (하트1개)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            lucide.createIcons();
+        }
+
+        /* --------------------------------------------------
+         * PROFILE DETAIL & CONNECT LOGIC
+         * -------------------------------------------------- */
+        function openProfileModal(userId) {
+            const user = usersList.find(u => u.id === userId);
+            if (!user) return;
+
+            const modalContent = document.getElementById('modal-profile-content');
+            modalContent.innerHTML = `
+                <div class="relative h-64">
+                    <img src="${user.avatar}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+                </div>
+                <div class="p-6 space-y-4 -mt-10 relative z-10">
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-1">
+                        <span class="text-[10px] font-bold text-rose-400 uppercase tracking-widest">${user.age}세 · ${user.gender}</span>
+                        <h2 class="text-2xl font-black text-white">${user.nickname}</h2>
+                        <p class="text-xs text-slate-400">${user.affiliation} · ${user.location}</p>
+                    </div>
+
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-2">
+                        <h4 class="text-xs font-bold text-slate-300">자기소개</h4>
+                        <p class="text-xs text-slate-300 leading-relaxed">${user.bio}</p>
+                    </div>
+
+                    <button onclick="closeProfileModal(); requestConnect('${user.id}')" class="w-full bg-gradient-to-r from-rose-600 to-pink-600 text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-lg shadow-rose-600/30 flex items-center justify-center gap-2">
+                        <i data-lucide="heart" class="w-4 h-4"></i> 소개팅 신청하기 (하트 1개 차감)
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('modal-profile-detail').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeProfileModal() {
+            document.getElementById('modal-profile-detail').classList.add('hidden');
+        }
+
+        function requestConnect(partnerId) {
+            if (!currentUser) {
+                showToast('로그인이 필요합니다.', 'warning');
+                openLoginModal();
+                return;
+            }
+
+            if (currentUser.hearts < 1) {
+                showToast('하트 토큰이 부족합니다. 하트를 충전해주세요!', 'error');
+                openStoreModal();
+                return;
+            }
+
+            const partner = usersList.find(u => u.id === partnerId);
+            if (!partner) return;
+
+            // Deduct heart
+            currentUser.hearts -= 1;
+
+            // Add match
+            const matchId = `match_${Date.now()}`;
+            matchesList.push({
+                id: matchId,
+                userId: currentUser.id,
+                partnerId: partner.id,
+                messages: [
+                    { sender: partner.id, text: `안녕하세요 ${currentUser.nickname}님! 반가워요 😊`, time: '방금 전' }
+                ]
+            });
+
+            renderHeaderUI();
+            renderMyProfileView();
+            showToast(`${partner.nickname}님과의 소개팅 매칭 대화방이 개설되었습니다!`, 'success');
+            openChatModal(partner.id);
+        }
+
+        /* --------------------------------------------------
+         * CHAT & MESSAGING SYSTEM
+         * -------------------------------------------------- */
+        function renderChatList() {
+            const container = document.getElementById('chat-list-container');
+            if (!currentUser) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-slate-900/60 rounded-3xl border border-slate-800">
+                        <i data-lucide="message-circle-off" class="w-10 h-10 text-slate-600 mx-auto mb-2"></i>
+                        <p class="text-xs text-slate-400">로그인 후 대화목록을 확인할 수 있습니다.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            const myMatches = matchesList.filter(m => m.userId === currentUser.id || m.partnerId === currentUser.id);
+
+            if (myMatches.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-slate-900/60 rounded-3xl border border-slate-800 space-y-2">
+                        <i data-lucide="sparkles" class="w-10 h-10 text-rose-500 mx-auto"></i>
+                        <p class="text-xs font-bold text-slate-300">아직 개설된 대화방이 없습니다.</p>
+                        <p class="text-[11px] text-slate-500">인연 목록에서 마음에 드는 상대에게 소개팅을 신청해보세요!</p>
+                        <button onclick="switchTab('discover')" class="mt-2 bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md">
+                            인연목록 둘러보기
+                        </button>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = myMatches.map(m => {
+                const partnerId = m.userId === currentUser.id ? m.partnerId : m.userId;
+                const partner = usersList.find(u => u.id === partnerId) || { nickname: '알 수 없음', avatar: '', affiliation: '' };
+                const lastMsg = m.messages[m.messages.length - 1] || { text: '대화를 시작하세요.', time: '' };
+
+                return `
+                    <div onclick="openChatModal('${partnerId}')" class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl hover:border-slate-700 cursor-pointer flex items-center justify-between gap-3 transition">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <img src="${partner.avatar}" class="w-12 h-12 rounded-2xl object-cover border border-slate-800 shrink-0">
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-bold text-white truncate">${partner.nickname}</h4>
+                                <p class="text-xs text-slate-400 truncate mt-0.5">${lastMsg.text}</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-slate-500 shrink-0">${lastMsg.time}</span>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function openChatModal(partnerId) {
+            currentActiveChatPartnerId = partnerId;
+            const partner = usersList.find(u => u.id === partnerId);
+            if (!partner) return;
+
+            document.getElementById('chat-partner-avatar').src = partner.avatar;
+            document.getElementById('chat-partner-name').innerText = partner.nickname;
+            document.getElementById('chat-partner-sub').innerText = `${partner.affiliation} · ${partner.location}`;
+
+            renderChatMessages();
+            document.getElementById('modal-chat').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeChatModal() {
+            document.getElementById('modal-chat').classList.add('hidden');
+            currentActiveChatPartnerId = null;
+        }
+
+        function renderChatMessages() {
+            if (!currentUser || !currentActiveChatPartnerId) return;
+
+            const match = matchesList.find(m => 
+                (m.userId === currentUser.id && m.partnerId === currentActiveChatPartnerId) ||
+                (m.partnerId === currentUser.id && m.userId === currentActiveChatPartnerId)
+            );
+
+            const msgContainer = document.getElementById('chat-messages-container');
+            if (!match) return;
+
+            msgContainer.innerHTML = match.messages.map(msg => {
+                const isMe = msg.sender === currentUser.id;
+                return `
+                    <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-[75%] ${isMe ? 'bg-rose-600 text-white rounded-2xl rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-2xl rounded-tl-none'} p-3 text-xs leading-relaxed shadow-sm">
+                            ${msg.text}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            msgContainer.scrollTop = msgContainer.scrollHeight;
+        }
+
+        function handleSendChatMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input-field');
+            const text = input.value.trim();
+            if (!text || !currentActiveChatPartnerId) return;
+
+            const match = matchesList.find(m => 
+                (m.userId === currentUser.id && m.partnerId === currentActiveChatPartnerId) ||
+                (m.partnerId === currentUser.id && m.userId === currentActiveChatPartnerId)
+            );
+
+            if (match) {
+                match.messages.push({
+                    sender: currentUser.id,
+                    text,
+                    time: '방금 전'
+                });
+                input.value = '';
+                renderChatMessages();
+                renderChatList();
+            }
+        }
+
+        /* --------------------------------------------------
+         * TOSS BANK STORE & DEPOSIT SYSTEM
+         * -------------------------------------------------- */
+        function openStoreModal() {
+            if (!currentUser) {
+                showToast('로그인이 필요합니다.', 'warning');
+                openLoginModal();
+                return;
+            }
+            document.getElementById('store-depositor-name').value = currentUser.realName || '';
+            document.getElementById('modal-store').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeStoreModal() {
+            document.getElementById('modal-store').classList.add('hidden');
+        }
+
+        function updateDepositTotal() {
+            const count = parseInt(document.getElementById('store-heart-amount').value);
+            const total = count * 500;
+            document.getElementById('store-total-price').innerText = `${total.toLocaleString()}원`;
+        }
+
+        function handleRequestDeposit(e) {
+            e.preventDefault();
+            const count = parseInt(document.getElementById('store-heart-amount').value);
+            const depositor = document.getElementById('store-depositor-name').value.trim();
+
+            if (!depositor) {
+                showToast('입금자명을 입력해주세요.', 'error');
+                return;
+            }
+
+            depositRequests.push({
+                id: `dep_${Date.now()}`,
+                userId: currentUser.id,
+                userRealName: currentUser.realName,
+                depositorName: depositor,
+                hearts: count,
+                amount: count * 500,
+                status: 'pending',
+                time: '방금 전'
+            });
+
+            closeStoreModal();
+            showToast('입금 확인 요청이 접수되었습니다! 개발자 승인 후 즉시 지급됩니다.', 'success');
+            renderAdminDashboard();
+        }
+
+        /* --------------------------------------------------
+         * ADMIN / DEVELOPER MONITORING DASHBOARD
+         * -------------------------------------------------- */
+        function renderAdminDashboard() {
+            if (!currentUser || !currentUser.isAdmin) return;
+
+            document.getElementById('admin-stat-users').innerText = `${usersList.length}명`;
+            document.getElementById('admin-stat-deposits').innerText = `${depositRequests.filter(d => d.status === 'pending').length}건`;
+            document.getElementById('admin-stat-matches').innerText = `${matchesList.length}건`;
+            document.getElementById('admin-stat-logs').innerText = `${adminLogs.length}개`;
+
+            // Render deposit requests queue
+            const depositQueue = document.getElementById('admin-deposit-queue');
+            const pendingDeposits = depositRequests.filter(d => d.status === 'pending');
+
+            if (pendingDeposits.length === 0) {
+                depositQueue.innerHTML = `
+                    <div class="text-center py-6 text-xs text-slate-500 bg-slate-950 rounded-xl">
+                        현재 대기 중인 입금 확인 요청이 없습니다.
+                    </div>
+                `;
+            } else {
+                depositQueue.innerHTML = pendingDeposits.map(req => `
+                    <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-xl flex items-center justify-between gap-3 text-xs">
+                        <div>
+                            <span class="font-bold text-white">${req.depositorName}</span>
+                            <span class="text-slate-400"> (신청자: ${req.userRealName})</span>
+                            <div class="text-[11px] text-amber-400 font-mono mt-0.5">${req.amount.toLocaleString()}원 → 하트 ${req.hearts}개 충전 요청</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="approveDeposit('${req.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-3 py-1.5 rounded-lg transition">
+                                입금 승인
+                            </button>
+                            <button onclick="rejectDeposit('${req.id}')" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] px-3 py-1.5 rounded-lg transition">
+                                거절
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Render users list in admin table
+            const tableBody = document.getElementById('admin-user-table-body');
+            tableBody.innerHTML = usersList.map(u => `
+                <tr class="hover:bg-slate-800/40 transition">
+                    <td class="p-3">
+                        <img src="${u.avatar}" class="w-8 h-8 rounded-xl object-cover border border-slate-700">
+                    </td>
+                    <td class="p-3">
+                        <div class="font-bold text-white">${u.realName}</div>
+                        <div class="text-[10px] text-slate-400">@${u.nickname}</div>
+                    </td>
+                    <td class="p-3 font-mono text-slate-300">${u.phone}</td>
+                    <td class="p-3">${u.age}세 / ${u.affiliation}</td>
+                    <td class="p-3">${u.location}</td>
+                    <td class="p-3">
+                        <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+                            동의완료 (1,000만)
+                        </span>
+                    </td>
+                    <td class="p-3">
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="modifyUserHearts('${u.id}', -1)" class="w-6 h-6 bg-slate-800 text-slate-200 rounded font-bold hover:bg-slate-700">-</button>
+                            <span class="font-mono text-rose-400 font-bold px-1">${u.hearts}</span>
+                            <button onclick="modifyUserHearts('${u.id}', 1)" class="w-6 h-6 bg-slate-800 text-slate-200 rounded font-bold hover:bg-slate-700">+</button>
+                        </div>
+                    </td>
+                    <td class="p-3">
+                        ${u.isAdmin ? '<span class="text-[10px] font-bold text-amber-400">개발자</span>' : `
+                            <button onclick="deleteUserByAdmin('${u.id}')" class="text-[10px] bg-rose-950/60 border border-rose-800 text-rose-300 hover:bg-rose-900 px-2.5 py-1 rounded transition">
+                                계정 삭제
+                            </button>
+                        `}
+                    </td>
+                </tr>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function approveDeposit(reqId) {
+            const req = depositRequests.find(d => d.id === reqId);
+            if (!req) return;
+
+            req.status = 'approved';
+            const targetUser = usersList.find(u => u.id === req.userId);
+            if (targetUser) {
+                targetUser.hearts += req.hearts;
+            }
+
+            showToast(`${req.depositorName}님의 무통장 입금이 승인되어 하트 ${req.hearts}개가 지급되었습니다!`, 'success');
+            renderHeaderUI();
+            renderAdminDashboard();
+        }
+
+        function rejectDeposit(reqId) {
+            const req = depositRequests.find(d => d.id === reqId);
+            if (!req) return;
+
+            req.status = 'rejected';
+            showToast('입금 요청이 거절 처리되었습니다.', 'info');
+            renderAdminDashboard();
+        }
+
+        function modifyUserHearts(userId, delta) {
+            const user = usersList.find(u => u.id === userId);
+            if (!user) return;
+
+            user.hearts = Math.max(0, user.hearts + delta);
+            renderHeaderUI();
+            renderAdminDashboard();
+        }
+
+        function deleteUserByAdmin(userId) {
+            usersList = usersList.filter(u => u.id !== userId);
+            showToast('회원 계정이 삭제되었습니다.', 'info');
+            renderAdminDashboard();
+            renderDiscoverCards();
+        }
+
+        /* --------------------------------------------------
+         * TOAST NOTIFICATION SYSTEM
+         * -------------------------------------------------- */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let typeStyles = 'bg-slate-900 text-white border-slate-700';
+            let iconName = 'info';
+
+            if (type === 'success') {
+                typeStyles = 'bg-slate-900 text-emerald-300 border-emerald-500/50';
+                iconName = 'check-circle-2';
+            } else if (type === 'error') {
+                typeStyles = 'bg-slate-900 text-rose-300 border-rose-500/50';
+                iconName = 'alert-circle';
+            } else if (type === 'warning') {
+                typeStyles = 'bg-slate-900 text-amber-300 border-amber-500/50';
+                iconName = 'alert-triangle';
+            }
+
+            toast.className = `p-3.5 rounded-2xl border shadow-2xl backdrop-blur-xl flex items-center gap-2.5 text-xs font-semibold animate-in fade-in slide-in-from-top duration-200 pointer-events-auto ${typeStyles}`;
+            toast.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 shrink-0"></i><span>${message}</span>`;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+    </script>
+</body>
+</html>
